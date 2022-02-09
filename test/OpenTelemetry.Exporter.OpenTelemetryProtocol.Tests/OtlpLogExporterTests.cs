@@ -23,26 +23,33 @@ using Xunit;
 
 namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 {
-    public class OtlpLogExporterTests : Http2UnencryptedSupportTests
+    public sealed class OtlpLogExporterTests : Http2UnencryptedSupportTests
     {
-        [Fact]
-        public void ToOtlpLogRecordTest()
-        {
-            // Just a basic test to demonstrate an
-            // approach useful for testing.
-            // This needs to be expanded to
-            // actually test the conversion.
-            List<LogRecord> logRecords = new List<LogRecord>();
+        private readonly ILogger logger;
+        private readonly List<LogRecord> exportedItems = new List<LogRecord>();
+        private readonly ILoggerFactory loggerFactory;
+        private readonly BaseExporter<LogRecord> exporter;
+        private OpenTelemetryLoggerOptions options;
 
-            using var loggerFactory = LoggerFactory.Create(builder =>
+        public OtlpLogExporterTests()
+        {
+            this.exporter = new InMemoryExporter<LogRecord>(this.exportedItems);
+            this.loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.AddOpenTelemetry(options =>
                 {
-                    options.IncludeFormattedMessage = true;
-                    options.ParseStateValues = true;
-                    options.AddInMemoryExporter(logRecords);
+                    this.options = options;
                 });
             });
+
+            this.logger = this.loggerFactory.CreateLogger<OtlpLogExporterTests>();
+        }
+
+        [Fact]
+        public void ToOtlpLogRecordTest()
+        {
+            this.options.IncludeFormattedMessage = true;
+            this.options.ParseStateValues = true;
 
             // TODO:
             // Validate attributes, severity, traceid,spanid etc.
