@@ -29,7 +29,6 @@ namespace OpenTelemetry.Exporter
         internal Func<DateTimeOffset> GetUtcNowDateTimeOffset = () => DateTimeOffset.UtcNow;
 
         private int scrapeResponseCacheDurationMilliseconds = 10 * 1000;
-        private IReadOnlyCollection<string> httpListenerPrefixes = new string[] { "http://localhost:9464/" };
 
 #if NETCOREAPP3_1_OR_GREATER
         /// <summary>
@@ -49,27 +48,7 @@ namespace OpenTelemetry.Exporter
         /// Gets or sets the prefixes to use for the http listener. Default
         /// value: http://localhost:9464/.
         /// </summary>
-        public IReadOnlyCollection<string> HttpListenerPrefixes
-        {
-            get => this.httpListenerPrefixes;
-            set
-            {
-                Guard.ThrowIfNull(value, nameof(this.httpListenerPrefixes));
-
-                foreach (string inputUri in value)
-                {
-                    if (!(Uri.TryCreate(inputUri, UriKind.Absolute, out var uri) &&
-                        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)))
-                    {
-                        throw new ArgumentException(
-                            "Prometheus server path should be a valid URI with http/https scheme.",
-                            nameof(this.httpListenerPrefixes));
-                    }
-                }
-
-                this.httpListenerPrefixes = value;
-            }
-        }
+        public IReadOnlyCollection<string> HttpListenerPrefixes { get; set; } = new string[] { "http://localhost:9464/" };
 
         /// <summary>
         /// Gets or sets the path to use for the scraping endpoint. Default value: /metrics.
