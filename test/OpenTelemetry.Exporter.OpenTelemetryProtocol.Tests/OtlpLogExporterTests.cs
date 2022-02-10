@@ -25,48 +25,55 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 {
     public class OtlpLogExporterTests : Http2UnencryptedSupportTests
     {
-        [Fact]
-        public void ToOtlpLogRecordTest()
-        {
-            // Just a basic test to demonstrate an
-            // approach useful for testing.
-            // This needs to be expanded to
-            // actually test the conversion.
-            List<LogRecord> logRecords = new List<LogRecord>();
+        private readonly ILogger logger;
+        private readonly List<LogRecord> exportedItems = new List<LogRecord>();
+        private readonly ILoggerFactory loggerFactory;
+        private readonly BaseExporter<LogRecord> exporter;
+        private OpenTelemetryLoggerOptions options;
 
-            using var loggerFactory = LoggerFactory.Create(builder =>
+        public OtlpLogExporterTests()
+        {
+            this.exporter = new InMemoryExporter<LogRecord>(this.exportedItems);
+            this.loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.AddOpenTelemetry(options =>
                 {
-                    options.IncludeFormattedMessage = true;
-                    options.ParseStateValues = true;
-                    options.AddInMemoryExporter(logRecords);
+                    this.options = options;
+                    this.options.AddInMemoryExporter(this.exportedItems);
                 });
             });
 
-            // TODO:
-            // Validate attributes, severity, traceid,spanid etc.
+            this.logger = this.loggerFactory.CreateLogger<OtlpLogExporterTests>();
+        }
 
-            var logger = loggerFactory.CreateLogger("log-category");
-            logger.LogInformation("Hello from {name} {price}.", "tomato", 2.99);
-            Assert.Single(logRecords);
-            var logRecord = logRecords[0];
+        // TODO:
+        // Validate attributes, severity, traceid,spanid etc.
+
+        [Fact]
+        public void ToOtlpLogRecordTest()
+        {
+            this.options.IncludeFormattedMessage = true;
+            this.options.ParseStateValues = true;
+
+            this.logger.LogInformation("Hello from {name} {price}.", "tomato", 2.99);
+            Assert.Single(this.exportedItems);
+            var logRecord = this.exportedItems[0];
             var otlpLogRecord = logRecord.ToOtlpLog();
             Assert.NotNull(otlpLogRecord);
             Assert.Equal("Hello from tomato 2.99.", otlpLogRecord.Body.StringValue);
-            logRecords.Clear();
+            this.exportedItems.Clear();
 
-            logger.LogInformation(new EventId(10, null), "Hello from {name} {price}.", "tomato", 2.99);
-            Assert.Single(logRecords);
-            logRecord = logRecords[0];
+            this.logger.LogInformation(new EventId(10, null), "Hello from {name} {price}.", "tomato", 2.99);
+            Assert.Single(this.exportedItems);
+            logRecord = this.exportedItems[0];
             otlpLogRecord = logRecord.ToOtlpLog();
             Assert.NotNull(otlpLogRecord);
             Assert.Equal("Hello from tomato 2.99.", otlpLogRecord.Body.StringValue);
-            logRecords.Clear();
+            this.exportedItems.Clear();
 
-            logger.LogInformation(new EventId(10, "MyEvent10"), "Hello from {name} {price}.", "tomato", 2.99);
-            Assert.Single(logRecords);
-            logRecord = logRecords[0];
+            this.logger.LogInformation(new EventId(10, "MyEvent10"), "Hello from {name} {price}.", "tomato", 2.99);
+            Assert.Single(this.exportedItems);
+            logRecord = this.exportedItems[0];
             otlpLogRecord = logRecord.ToOtlpLog();
             Assert.NotNull(otlpLogRecord);
             Assert.Equal("Hello from tomato 2.99.", otlpLogRecord.Body.StringValue);
