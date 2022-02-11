@@ -23,7 +23,6 @@ using OpenTelemetry.Internal;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
 using Xunit;
-using OtlpCommon = Opentelemetry.Proto.Common.V1;
 
 namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 {
@@ -47,9 +46,6 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 
             this.logger = this.loggerFactory.CreateLogger<OtlpLogExporterTests>();
         }
-
-        // TODO:
-        // Validate attributes, severity, etc.
 
         [Fact]
         public void CheckToOtlpLogRecordStateValues()
@@ -91,7 +87,7 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
         }
 
         [Fact]
-        public void CheckToOtlpLogRecordTraceIdSpanIdFlag()
+        public void CheckToOtlpLogRecordTraceIdSpanIdFlagWithDroppedActivity()
         {
             this.logger.LogInformation("Log within a dropped activity");
             var logRecord = this.exportedItems[0];
