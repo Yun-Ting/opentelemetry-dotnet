@@ -19,9 +19,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation;
+using OpenTelemetry.Internal;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Trace;
 using Xunit;
+using OtlpCommon = Opentelemetry.Proto.Common.V1;
 
 namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 {
@@ -137,7 +139,55 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
         [Fact]
         public void CheckToOtlpLogRecordSeverityText()
         {
+            this.options.IncludeFormattedMessage = true;
 
+            this.logger.LogInformation("Hello from {name} {price}.", "tomato", 2.99);
+            Assert.Single(this.exportedItems);
+
+            var logRecord = this.exportedItems[0];
+            var otlpLogRecord = logRecord.ToOtlpLog();
+
+            Assert.NotNull(otlpLogRecord);
+            Assert.Equal(logRecord.LogLevel.ToString(), otlpLogRecord.SeverityText);
+        }
+
+        [Fact]
+        public void CheckToOtlpLogRecordFormattedMessage()
+        {
+            this.options.IncludeFormattedMessage = true;
+
+            this.logger.LogInformation("OpenTelemetry!");
+            Assert.Single(this.exportedItems);
+
+            var logRecord = this.exportedItems[0];
+            var otlpLogRecord = logRecord.ToOtlpLog();
+
+            Assert.NotNull(otlpLogRecord);
+            Assert.Equal(logRecord.FormattedMessage, otlpLogRecord.Body.StringValue);
+        }
+
+        [Fact]
+        public void CheckToOtlpLogRecordExceptionAttributes()
+        {
+            var exceptionMessage = "Exception Message";
+            var exception = new Exception(exceptionMessage);
+            var message = "Exception Occurred";
+            this.logger.LogInformation(exception, message);
+
+            var logRecord = this.exportedItems[0];
+            var loggedException = logRecord.Exception;
+            var otlpLogRecord = logRecord.ToOtlpLog();
+
+            Assert.NotNull(otlpLogRecord);
+            var otlpLogRecordAttributes = otlpLogRecord.Attributes.ToString();
+            Assert.Contains(SemanticConventions.AttributeExceptionType, otlpLogRecordAttributes);
+            Assert.Contains(logRecord.Exception.GetType().Name, otlpLogRecordAttributes);
+
+            Assert.Contains(SemanticConventions.AttributeExceptionMessage, otlpLogRecordAttributes);
+            Assert.Contains(logRecord.Exception.Message, otlpLogRecordAttributes);
+
+            Assert.Contains(SemanticConventions.AttributeExceptionStacktrace, otlpLogRecordAttributes);
+            Assert.Contains(logRecord.Exception.ToInvariantString(), otlpLogRecordAttributes);
         }
     }
 }
