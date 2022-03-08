@@ -45,7 +45,23 @@ namespace OpenTelemetry.Exporter.Zipkin.Implementation
                 Tags = PooledList<KeyValuePair<string, object>>.Create(),
             };
 
-            activity.EnumerateTags(ref tagState);
+            if (activity.Status == ActivityStatusCode.Ok || activity.Status == ActivityStatusCode.Error)
+            {
+                PooledList<KeyValuePair<string, object>>.Add(
+                                ref tagState.Tags,
+                                new KeyValuePair<string, object>(
+                                    SpanAttributeConstants.StatusCodeKey,
+                                    StatusHelper.GetTagValueForActivityStatusCode(activity.Status)));
+            }
+            else if (activity.Status == ActivityStatusCode.Error)
+            {
+                // do something here
+            }
+            else
+            {
+                // activity status is unset
+                activity.EnumerateTags(ref tagState);
+            }
 
             var activitySource = activity.Source;
             if (!string.IsNullOrEmpty(activitySource.Name))
