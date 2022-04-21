@@ -37,6 +37,11 @@ internal class MyExporter : BaseExporter<LogRecord>
         var sb = new StringBuilder();
         foreach (var record in batch)
         {
+            if (record.State != null)
+            {
+                Console.WriteLine($"{"LogRecord.State:"}{record.State}");
+            }
+
             if (sb.Length > 0)
             {
                 sb.Append(", ");

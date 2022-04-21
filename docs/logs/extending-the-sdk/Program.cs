@@ -14,9 +14,9 @@
 // limitations under the License.
 // </copyright>
 
-using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
+using OpenTelemetry.Logs;
 
 namespace ExtendingTheSdk;
 
@@ -29,45 +29,46 @@ public class Program
             {
                 options.IncludeScopes = true;
                 options.AddProcessor(new MyProcessor("ProcessorA"))
-                       .AddProcessor(new MyProcessor("ProcessorB"))
+                       //.AddProcessor(new MyProcessor("ProcessorB"))
                        .AddProcessor(new SimpleLogRecordExportProcessor(new MyExporter("ExporterX")))
-                       .AddProcessor(new MyRedactionProcessor("RedctionProcessor"))
+                       //.AddProcessor(new MyRedactionProcessor("RedctionProcessor"))
+                       .AddProcessor(new MyRedactionProcessor2("RedctionProcessor"))
                        .AddMyExporter();
             }));
 
         var logger = loggerFactory.CreateLogger<Program>();
 
-        // unstructured log
-        logger.LogInformation("Hello, World!");
+        //// unstructured log
+        //logger.LogInformation("Hello, World!");
 
-        // String interpolation, as in the below line, results in unstructured logging, and is not recommended
-        // logger.LogInformation($"Hello from potato {0.99}.");
+        //// String interpolation, as in the below line, results in unstructured logging, and is not recommended
+        //// logger.LogInformation($"Hello from potato {0.99}.");
 
-        // structured log with template
-        logger.LogInformation("Hello from {name} {price}.", "tomato", 2.99);
+        //// structured log with template
+        //logger.LogInformation("Hello from {name} {price}.", "tomato", 2.99);
 
-        // structured log with strong type
-        logger.LogInformation("{food}", new Food { Name = "artichoke", Price = 3.99 });
+        //// structured log with strong type
+        //logger.LogInformation("{food}", new Food { Name = "artichoke", Price = 3.99 });
 
-        // structured log with anonymous type
-        logger.LogInformation("{food}", new { Name = "pumpkin", Price = 5.99 });
+        //// structured log with anonymous type
+        //logger.LogInformation("{food}", new { Name = "pumpkin", Price = 5.99 });
 
-        // structured log with general type
-        logger.LogInformation("{food}", new Dictionary<string, object>
-        {
-            ["Name"] = "truffle",
-            ["Price"] = 299.99,
-        });
+        //// structured log with general type
+        //logger.LogInformation("{food}", new Dictionary<string, object>
+        //{
+        //    ["Name"] = "truffle",
+        //    ["Price"] = 299.99,
+        //});
 
-        // log with scopes
-        using (logger.BeginScope("[operation]"))
-        using (logger.BeginScope("[hardware]"))
-        {
-            logger.LogError("{name} is broken.", "refrigerator");
-        }
+        //// log with scopes
+        //using (logger.BeginScope("[operation]"))
+        //using (logger.BeginScope("[hardware]"))
+        //{
+        //    logger.LogError("{name} is broken.", "refrigerator");
+        //}
 
         // message will be redacted by MyRedactionProcessor
-        logger.LogInformation("Message to log: {message}.", "sensitive information");
+        logger.LogInformation("OpenTelemetry {personName} {message}!", "David", "sensitive information");
     }
 
     internal struct Food
