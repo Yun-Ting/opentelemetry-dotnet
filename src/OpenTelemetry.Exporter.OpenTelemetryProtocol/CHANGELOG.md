@@ -1,10 +1,88 @@
 # Changelog
 
-* Changed `OtlpLogExporter` to convert `ILogger` structured log inputs to
-  `Attributes` in OpenTelemetry (only active when `ParseStateValues` is `true`
-  on `OpenTelemetryLoggerOptions`)
-
 ## Unreleased
+
+## 1.3.0-beta.1
+
+Released 2022-Apr-15
+
+* Removes .NET Framework 4.6.1. The minimum .NET Framework
+  version supported is .NET 4.6.2. ([#3190](https://github.com/open-telemetry/opentelemetry-dotnet/issues/3190))
+
+## 1.2.0
+
+Released 2022-Apr-15
+
+* LogExporter to correctly map Severity to OTLP.
+  ([#3177](https://github.com/open-telemetry/opentelemetry-dotnet/pull/3177))
+
+* LogExporter to special case {OriginalFormat} to populate
+  Body. ([#3182](https://github.com/open-telemetry/opentelemetry-dotnet/pull/3182))
+
+## 1.2.0-rc5
+
+Released 2022-Apr-12
+
+* Updated underlying proto files to
+  [v0.16.0](https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.16.0).
+  The LogRecord.Name field was removed. The CategoryName provided
+  when calling CreateLogger previously populated this field. For now,
+  CategoryName is no longer exported via OTLP. It will be reintroduced
+  in the future as an attribute.
+
+## 1.2.0-rc4
+
+Released 2022-Mar-30
+
+* Added support for Activity Status and StatusDescription which were
+  added to Activity from `System.Diagnostics.DiagnosticSource` version 6.0.
+  Prior to version 6.0, setting the status of an Activity was provided by the
+  .NET OpenTelemetry API via the `Activity.SetStatus` extension method in the
+  `OpenTelemetry.Trace` namespace. Internally, this extension method added the
+  status as tags on the Activity: `otel.status_code` and `otel.status_description`.
+  Therefore, to maintain backward compatibility, the exporter falls back to using
+  these tags to infer status.
+ ([#3100](https://github.com/open-telemetry/opentelemetry-dotnet/pull/3100))
+
+* Fixed OTLP metric exporter to default to a periodic 60 second export cycle.
+  A bug was introduced in #2717 that caused the OTLP metric export to default
+  to a manual export cycle (i.e., requiring an explicit flush). A workaround
+  for this bug has been provided
+  [here](https://github.com/open-telemetry/opentelemetry-dotnet/issues/2979#issuecomment-1061060541).
+  ([#2982](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2982))
+
+* Bumped minimum required gRPC version (2.23.0 to 2.44.0).
+  Fixes issues building on Apple Silicon (M1).
+  ([#2963](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2963))
+
+* Fixed issue where the configuration of an OTLP exporter could be changed
+  after instantiation by altering the original `OtlpExporterOptions` provided.
+  ([#3066](https://github.com/open-telemetry/opentelemetry-dotnet/pull/3066))
+
+* TraceExporter to stop populating `DeprecatedCode` in OTLP Status.
+
+## 1.2.0-rc3
+
+Released 2022-Mar-04
+
+* LogExporter bug fix to handle null EventName.
+  ([#2871](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2871))
+
+* Fixed the default endpoint for OTLP exporter over HTTP/Protobuf.
+  The default value is `http://localhost:4318`.
+  ([#2868](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2868))
+
+* Removes metric related configuration options from `OtlpExporterOptions`.
+  `MetricReaderType`, `PeriodicExporterMetricReaderOptions`, and `Temporality`
+  are now configurable via the `MetricReaderOptions`.
+  ([#2717](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2717))
+
+* Exporter bug fix to not throw exceptions from Export method.
+  ([#2915](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2915))
+
+* OTLP LogExporter modified to not drop the whole batch if a single log from the
+  batch is invalid.
+  ([#2934](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2934))
 
 ## 1.2.0-rc2
 
@@ -13,6 +91,10 @@ Released 2022-Feb-02
 * Added validation that insecure channel is configured correctly when using
   .NET Core 3.x for gRPC-based exporting.
   ([#2691](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2691))
+
+* Changed `OtlpLogExporter` to convert `ILogger` structured log inputs to
+  `Attributes` in OpenTelemetry (only active when `ParseStateValues` is `true`
+  on `OpenTelemetryLoggerOptions`)
 
 ## 1.2.0-rc1
 
@@ -165,7 +247,7 @@ Released 2021-Feb-04
 
 Released 2021-Jan-29
 
-* Changed `OltpTraceExporter` class and constructor from internal to public.
+* Changed `OtlpTraceExporter` class and constructor from internal to public.
   ([#1612](https://github.com/open-telemetry/opentelemetry-dotnet/issues/1612))
 
 * In `OtlpExporterOptions.cs`: Exporter options now include a switch for Batch

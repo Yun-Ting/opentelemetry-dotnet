@@ -25,10 +25,12 @@ namespace OpenTelemetry.Logs
     [ProviderAlias("OpenTelemetry")]
     public class OpenTelemetryLoggerProvider : BaseProvider, ILoggerProvider, ISupportExternalScope
     {
-        internal readonly OpenTelemetryLoggerOptions Options;
+        internal readonly bool IncludeScopes;
+        internal readonly bool IncludeFormattedMessage;
+        internal readonly bool ParseStateValues;
         internal BaseProcessor<LogRecord> Processor;
         internal Resource Resource;
-        private readonly Hashtable loggers = new Hashtable();
+        private readonly Hashtable loggers = new();
         private bool disposed;
         private IExternalScopeProvider scopeProvider;
 
@@ -46,9 +48,12 @@ namespace OpenTelemetry.Logs
 
         internal OpenTelemetryLoggerProvider(OpenTelemetryLoggerOptions options)
         {
-            Guard.ThrowIfNull(options, nameof(options));
+            Guard.ThrowIfNull(options);
 
-            this.Options = options;
+            this.IncludeScopes = options.IncludeScopes;
+            this.IncludeFormattedMessage = options.IncludeFormattedMessage;
+            this.ParseStateValues = options.ParseStateValues;
+
             this.Resource = options.ResourceBuilder.Build();
 
             foreach (var processor in options.Processors)
@@ -75,7 +80,7 @@ namespace OpenTelemetry.Logs
 
         public ILogger CreateLogger(string categoryName)
         {
-            if (!(this.loggers[categoryName] is OpenTelemetryLogger logger))
+            if (this.loggers[categoryName] is not OpenTelemetryLogger logger)
             {
                 lock (this.loggers)
                 {
@@ -97,7 +102,7 @@ namespace OpenTelemetry.Logs
 
         internal OpenTelemetryLoggerProvider AddProcessor(BaseProcessor<LogRecord> processor)
         {
-            Guard.ThrowIfNull(processor, nameof(processor));
+            Guard.ThrowIfNull(processor);
 
             processor.SetParentProvider(this);
 

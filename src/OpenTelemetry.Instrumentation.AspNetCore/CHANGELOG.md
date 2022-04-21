@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+## 1.0.0-rc9.3
+
+Released 2022-Apr-15
+
+## 1.0.0-rc9.2
+
+Released 2022-Apr-12
+
+## 1.0.0-rc9.1
+
+Released 2022-Mar-30
+
+* Fix: Http server span status is now unset for `400`-`499`.
+  ([#2904](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2904))
+* Fix: drop direct reference of the `Microsoft.AspNetCore.Http.Features` from
+  net5 & net6 targets (already part of the FrameworkReference since the net5).
+  ([#2860](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2860))
+* Reduce allocations calculating the http.url tag.
+  ([#2947](https://github.com/open-telemetry/opentelemetry-dotnet/pull/2947))
+
+## 1.0.0-rc10 (broken. use 1.0.0-rc9.1 and newer)
+
+Released 2022-Mar-04
+
 ## 1.0.0-rc9
 
 Released 2022-Feb-02
@@ -79,7 +103,7 @@ Released 2020-Nov-5
   [Grpc.AspNetCore](https://www.nuget.org/packages/Grpc.AspNetCore/). This
   option is enabled by default.
   ([#1423](https://github.com/open-telemetry/opentelemetry-dotnet/pull/1423))
-* Renamed TextMapPropagator to TraceContextPropagator, CompositePropapagor to
+* Renamed TextMapPropagator to TraceContextPropagator, CompositePropagator to
   CompositeTextMapPropagator. IPropagator is renamed to TextMapPropagator and
   changed from interface to abstract class.
   ([#1427](https://github.com/open-telemetry/opentelemetry-dotnet/pull/1427))

@@ -32,7 +32,7 @@ using OpenTelemetry.Trace;
 using Xunit;
 using OtlpCollector = Opentelemetry.Proto.Collector.Trace.V1;
 
-namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests.Implementation.ExportClient
+namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 {
     public class OtlpHttpTraceExportClientTests
     {
@@ -109,7 +109,7 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests.Implementation.Expo
                     httpRequest = r;
 
                     // We have to capture content as it can't be accessed after request is disposed inside of SendExportRequest method
-                    httpRequestContent = r.Content.ReadAsByteArrayAsync()?.Result;
+                    httpRequestContent = r.Content.ReadAsByteArrayAsync(ct)?.Result;
                 })
 #else
                 .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())

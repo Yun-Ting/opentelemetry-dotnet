@@ -22,7 +22,7 @@ namespace OpenTelemetry.Exporter
 {
     public class ConsoleLogRecordExporter : ConsoleExporter<LogRecord>
     {
-        private const int RightPaddingLength = 30;
+        private const int RightPaddingLength = 35;
 
         public ConsoleLogRecordExporter(ConsoleExporterOptions options)
             : base(options)
@@ -33,35 +33,58 @@ namespace OpenTelemetry.Exporter
         {
             foreach (var logRecord in batch)
             {
-                this.WriteLine($"{"LogRecord.TraceId:".PadRight(RightPaddingLength)}{logRecord.TraceId}");
-                this.WriteLine($"{"LogRecord.SpanId:".PadRight(RightPaddingLength)}{logRecord.SpanId}");
-                this.WriteLine($"{"LogRecord.Timestamp:".PadRight(RightPaddingLength)}{logRecord.Timestamp:yyyy-MM-ddTHH:mm:ss.fffffffZ}");
-                this.WriteLine($"{"LogRecord.EventId:".PadRight(RightPaddingLength)}{logRecord.EventId.Id}");
-                this.WriteLine($"{"LogRecord.EventName:".PadRight(RightPaddingLength)}{logRecord.EventId.Name}");
-                this.WriteLine($"{"LogRecord.CategoryName:".PadRight(RightPaddingLength)}{logRecord.CategoryName}");
-                this.WriteLine($"{"LogRecord.LogLevel:".PadRight(RightPaddingLength)}{logRecord.LogLevel}");
-                this.WriteLine($"{"LogRecord.TraceFlags:".PadRight(RightPaddingLength)}{logRecord.TraceFlags}");
+                this.WriteLine($"{"LogRecord.Timestamp:",-RightPaddingLength}{logRecord.Timestamp:yyyy-MM-ddTHH:mm:ss.fffffffZ}");
+
+                if (logRecord.TraceId != default)
+                {
+                    this.WriteLine($"{"LogRecord.TraceId:",-RightPaddingLength}{logRecord.TraceId}");
+                    this.WriteLine($"{"LogRecord.SpanId:",-RightPaddingLength}{logRecord.SpanId}");
+                    this.WriteLine($"{"LogRecord.TraceFlags:",-RightPaddingLength}{logRecord.TraceFlags}");
+                }
+
+                this.WriteLine($"{"LogRecord.CategoryName:",-RightPaddingLength}{logRecord.CategoryName}");
+                this.WriteLine($"{"LogRecord.LogLevel:",-RightPaddingLength}{logRecord.LogLevel}");
+
                 if (logRecord.FormattedMessage != null)
                 {
-                    this.WriteLine($"{"LogRecord.FormattedMessage:".PadRight(RightPaddingLength)}{logRecord.FormattedMessage}");
+                    this.WriteLine($"{"LogRecord.FormattedMessage:",-RightPaddingLength}{logRecord.FormattedMessage}");
                 }
 
                 if (logRecord.State != null)
                 {
-                    this.WriteLine($"{"LogRecord.State:".PadRight(RightPaddingLength)}{logRecord.State}");
+                    this.WriteLine($"{"LogRecord.State:",-RightPaddingLength}{logRecord.State}");
                 }
                 else if (logRecord.StateValues != null)
                 {
                     this.WriteLine("LogRecord.StateValues (Key:Value):");
                     for (int i = 0; i < logRecord.StateValues.Count; i++)
                     {
-                        this.WriteLine($"{logRecord.StateValues[i].Key.PadRight(RightPaddingLength)}{logRecord.StateValues[i].Value}");
+                        // Special casing {OriginalFormat}
+                        // See https://github.com/open-telemetry/opentelemetry-dotnet/pull/3182
+                        // for explanation.
+                        if (logRecord.StateValues[i].Key.Equals("{OriginalFormat}"))
+                        {
+                            this.WriteLine($"{string.Empty,-4}{"OriginalFormat (a.k.a. Body)",-RightPaddingLength}{logRecord.StateValues[i].Value}");
+                        }
+                        else
+                        {
+                            this.WriteLine($"{string.Empty,-4}{logRecord.StateValues[i].Key,-RightPaddingLength}{logRecord.StateValues[i].Value}");
+                        }
+                    }
+                }
+
+                if (logRecord.EventId != default)
+                {
+                    this.WriteLine($"{"LogRecord.EventId:",-RightPaddingLength}{logRecord.EventId.Id}");
+                    if (string.IsNullOrEmpty(logRecord.EventId.Name))
+                    {
+                        this.WriteLine($"{"LogRecord.EventName:",-RightPaddingLength}{logRecord.EventId.Name}");
                     }
                 }
 
                 if (logRecord.Exception is { })
                 {
-                    this.WriteLine($"{"LogRecord.Exception:".PadRight(RightPaddingLength)}{logRecord.Exception?.Message}");
+                    this.WriteLine($"{"LogRecord.Exception:",-RightPaddingLength}{logRecord.Exception?.Message}");
                 }
 
                 int scopeDepth = -1;
@@ -77,17 +100,17 @@ namespace OpenTelemetry.Exporter
 
                     foreach (KeyValuePair<string, object> scopeItem in scope)
                     {
-                        exporter.WriteLine($"[Scope.{scopeDepth}]:{scopeItem.Key.PadRight(RightPaddingLength)}{scopeItem.Value}");
+                        exporter.WriteLine($"[Scope.{scopeDepth}]:{scopeItem.Key,-RightPaddingLength}{scopeItem.Value}");
                     }
                 }
 
                 var resource = this.ParentProvider.GetResource();
                 if (resource != Resource.Empty)
                 {
-                    this.WriteLine("Resource associated with LogRecord:");
+                    this.WriteLine("\nResource associated with LogRecord:");
                     foreach (var resourceAttribute in resource.Attributes)
                     {
-                        this.WriteLine($"    {resourceAttribute.Key}: {resourceAttribute.Value}");
+                        this.WriteLine($"{resourceAttribute.Key}: {resourceAttribute.Value}");
                     }
                 }
 

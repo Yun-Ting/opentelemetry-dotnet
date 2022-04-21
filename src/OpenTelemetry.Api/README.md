@@ -79,6 +79,11 @@ propagated out of proc using
 [Propagators](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md).
 OpenTelemetry SDK ships a BaggagePropagator and enables it by default.
 
+It is important to note that `Baggage` is not automatically attached to any
+telemetry. User *can* explicitly read `Baggage` and use it to enrich metrics,
+logs and traces. An example of doing this for traces is shown
+[here](../../docs/trace/extending-the-sdk/README.md#processor).
+
 ```csharp
 // Use GetBaggage to get all the key/value pairs present in Baggage
 foreach (var item in Baggage.GetBaggage())
@@ -314,10 +319,10 @@ chose not to sample this activity.
    Refer to the
    [specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/common/common.md#attribute-and-label-naming)
    for best practices on naming tags. It is also possible to provide an initial
-   set of tags during activity creation, as shown below. Tags provided at
-   activity creation are accessible for
-   [Samplers](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampler),
-   whereas any tags added using `SetTag` are not available for samplers.
+   set of tags during activity creation, as shown below. It is recommended to
+   provide all available `Tags` during activity creation itself, as
+   [Samplers](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampler)
+   can only consider information present during activity creation time.
 
     ```csharp
     var initialTags = new ActivityTagsCollection();
@@ -387,8 +392,26 @@ corresponding overloads of `ActivityEvent`.
 
 OpenTelemetry defines a concept called
 [Status](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status)
-to be associated with `Activity`. There is no `Status` class in .NET, and hence
-`Status` is set to an `Activity` using the following special tags:
+to be associated with `Activity`. Starting with [DiagnosticSource
+6.0](https://www.nuget.org/packages/System.Diagnostics.DiagnosticSource/6.0.0),
+`SetStatus` API on `Activity` can be used to set the status and description
+as shown below:
+
+```csharp
+activity?.SetStatus(ActivityStatusCode.Ok);
+activity?.SetStatus(ActivityStatusCode.Error, "Error Description");
+```
+
+All the official
+[Exporters](../../docs/trace/extending-the-sdk/README.md#exporter) shipped from
+this repo support the above shown mechanism of setting status.
+
+#### Setting Status - DiagnosticSource version older than 6.0
+
+Prior to [DiagnosticSource
+6.0](https://www.nuget.org/packages/System.Diagnostics.DiagnosticSource/6.0.0)
+there was no `Status` field in `Activity`, and hence `Status` is set to an
+`Activity` using the following special tags:
 
 `otel.status_code` is the `Tag` name used to store the `StatusCode`, and
 `otel.status_description` is the `Tag` name used to store the optional
@@ -455,13 +478,11 @@ for versions lower than `.NET Framework 4.6.1`.
 1. Install the `System.Diagnostics.DiagnosticSource` package version
    `6.0.0` or above to your application or library.
 
-    <!-- markdownlint-disable MD013 -->
     ```xml
     <ItemGroup>
       <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
     </ItemGroup>
     ```
-    <!-- markdownlint-enable MD013 -->
 
 2. Create a `Meter`, providing the name and version of the library/application
    doing the instrumentation. The `Meter` instance is typically created once and
@@ -509,7 +530,7 @@ This component uses an
 [EventSource](https://docs.microsoft.com/dotnet/api/system.diagnostics.tracing.eventsource)
 with the name "OpenTelemetry-Api" for its internal logging.
 Please refer to [SDK
-troubleshooting](../opentelemetry/README.md#troubleshooting) for instructions on
+troubleshooting](../OpenTelemetry/README.md#troubleshooting) for instructions on
 seeing these internal logs.
 
 ## References
