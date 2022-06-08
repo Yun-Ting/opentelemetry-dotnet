@@ -18,37 +18,37 @@ using System;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using OpenTelemetry.Internal;
 
 namespace OpenTelemetry.Exporter.Prometheus
 {
     /// <summary>
     /// An HTTP listener used to expose Prometheus metrics.
     /// </summary>
-    internal sealed class PrometheusExporterHttpServer : IDisposable
+    internal sealed class PrometheusExporterHttpServer : PrometheusExporter, IDisposable
     {
         private readonly PrometheusExporter exporter;
         private readonly HttpListener httpListener = new();
         private readonly object syncObject = new();
 
+        private bool disposed;
         private CancellationTokenSource tokenSource;
         private Task workerThread;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PrometheusExporterHttpServer"/> class.
         /// </summary>
-        /// <param name="exporter">The <see cref="PrometheusExporter"/> instance.</param>
-        public PrometheusExporterHttpServer(PrometheusExporter exporter)
+        public PrometheusExporterHttpServer(PrometheusExporterHttpServerOptions options)
+            : base()
         {
-            Guard.ThrowIfNull(exporter);
 
-            this.exporter = exporter;
-            if ((exporter.Options.HttpListenerPrefixes?.Count ?? 0) <= 0)
+            if ((options.HttpListenerPrefixes?.Count ?? 0) <= 0)
             {
                 throw new ArgumentException("No HttpListenerPrefixes were specified on PrometheusExporterOptions.");
             }
 
-            string path = exporter.Options.ScrapeEndpointPath ?? PrometheusExporterOptions.DefaultScrapeEndpointPath;
+            this.Start();
+
+            string path = options.ScrapeEndpointPath ?? PrometheusExporterHttpServerOptions.DefaultScrapeEndpointPath;
             if (!path.StartsWith("/"))
             {
                 path = $"/{path}";
@@ -59,7 +59,7 @@ namespace OpenTelemetry.Exporter.Prometheus
                 path = $"{path}/";
             }
 
-            foreach (string prefix in exporter.Options.HttpListenerPrefixes)
+            foreach (string prefix in options.HttpListenerPrefixes)
             {
                 this.httpListener.Prefixes.Add($"{prefix.TrimEnd('/')}{path}");
             }
@@ -105,14 +105,19 @@ namespace OpenTelemetry.Exporter.Prometheus
             }
         }
 
-        /// <inheritdoc/>
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (this.httpListener != null && this.httpListener.IsListening)
+            if (!this.disposed)
             {
-                this.Stop();
-                this.httpListener.Close();
+                if (disposing)
+                {
+                    this.Dispose();
+                }
+
+                this.disposed = true;
             }
+
+            base.Dispose(disposing);
         }
 
         private void WorkerProc()
