@@ -30,7 +30,6 @@ namespace OpenTelemetry.Exporter
         internal readonly PrometheusExporterOptions Options;
         private Func<int, bool> funcCollect;
         private Func<Batch<Metric>, ExportResult> funcExport;
-        private bool disposed;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PrometheusExporter"/> class.

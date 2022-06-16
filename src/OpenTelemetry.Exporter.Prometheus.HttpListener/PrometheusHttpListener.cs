@@ -20,8 +20,7 @@ namespace OpenTelemetry.Exporter.Prometheus.HttpListener
         /// Initializes a new instance of the <see cref="PrometheusHttpListener"/> class.
         /// </summary>
         /// <param name="meterProvider"><see cref="MeterProvider"/> class.</param>
-        /// <param name="configure">Something is wrong here.</param>
-        /// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
+        /// <param name="configure"><see cref="PrometheusHttpListenerOptions"/> Configure listener specific options.</param>
         public PrometheusHttpListener(MeterProvider meterProvider, Action<PrometheusHttpListenerOptions> configure = null)
         {
             Guard.ThrowIfNull(meterProvider);
@@ -59,7 +58,7 @@ namespace OpenTelemetry.Exporter.Prometheus.HttpListener
         }
 
         /// <summary>
-        /// Start Http Server.
+        /// Start the http Listener.
         /// </summary>
         /// <param name="token">An optional <see cref="CancellationToken"/> that can be used to stop the HTTP server.</param>
         public void Start(CancellationToken token = default)
@@ -81,7 +80,7 @@ namespace OpenTelemetry.Exporter.Prometheus.HttpListener
         }
 
         /// <summary>
-        /// Stop exporter.
+        /// Stop the http listener.
         /// </summary>
         public void Stop()
         {
