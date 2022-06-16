@@ -91,9 +91,12 @@ namespace OpenTelemetry.Exporter.Prometheus.Tests
         private async Task RunPrometheusExporterHttpServerIntegrationTest(bool skipMetrics = false)
         {
             Random random = new Random();
+            int retryAttempts = 5;
+            int port = 0;
+            string address = null;
+
             MeterProvider provider;
             PrometheusHttpListener listener;
-            string address = null;
 
             using var meter = new Meter(this.meterName);
 
@@ -102,10 +105,23 @@ namespace OpenTelemetry.Exporter.Prometheus.Tests
                 .AddPrometheusExporter()
                 .Build();
 
-            listener = new PrometheusHttpListener(provider, o =>
-                            o.HttpListenerPrefixes = new string[] { "http://localhost:9875" });
+            while (retryAttempts-- != 0)
+            {
+                port = random.Next(2000, 5000);
+                address = $"http://localhost:{port}/";
 
-            listener.Start();
+                listener = new PrometheusHttpListener(provider, o =>
+                    o.HttpListenerPrefixes = new string[] { address });
+
+                try
+                {
+                    listener.Start();
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(ex.Message);
+                }
+            }
 
             var tags = new KeyValuePair<string, object>[]
             {
