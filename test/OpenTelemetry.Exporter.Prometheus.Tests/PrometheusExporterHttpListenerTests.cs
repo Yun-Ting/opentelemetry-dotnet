@@ -137,7 +137,6 @@ namespace OpenTelemetry.Exporter.Prometheus.Tests
             }
 
             using HttpClient client = new HttpClient();
-
             using var response = await client.GetAsync($"{address}metrics").ConfigureAwait(false);
 
             if (!skipMetrics)
