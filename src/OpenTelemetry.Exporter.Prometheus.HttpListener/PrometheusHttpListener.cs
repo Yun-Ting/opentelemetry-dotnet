@@ -9,8 +9,6 @@ namespace OpenTelemetry.Exporter.Prometheus.HttpListener
 {
     internal sealed class PrometheusHttpListener : IDisposable
     {
-        internal readonly PrometheusHttpListenerOptions Options;
-
         private readonly PrometheusExporter exporter;
         private readonly System.Net.HttpListener httpListener = new();
         private readonly object syncObject = new();
@@ -18,26 +16,45 @@ namespace OpenTelemetry.Exporter.Prometheus.HttpListener
         private CancellationTokenSource tokenSource;
         private Task workerThread;
 
-        public PrometheusHttpListener(MeterProvider meterProvider, PrometheusHttpListenerOptions options)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PrometheusHttpListener"/> class.
+        /// </summary>
+        /// <param name="meterProvider"><see cref="MeterProvider"/> class.</param>
+        /// <param name="configure">Something is wrong here.</param>
+        /// <returns>The instance of <see cref="MeterProviderBuilder"/> to chain the calls.</returns>
+        public PrometheusHttpListener(MeterProvider meterProvider, Action<PrometheusHttpListenerOptions> configure = null)
         {
             Guard.ThrowIfNull(meterProvider);
-
-            if ((options.HttpListenerPrefixes?.Count ?? 0) <= 0)
-            {
-                throw new ArgumentException("No HttpListenerPrefixes were specified on PrometheusHttpListenerOptions.");
-            }
-
-            this.Options = options;
-
             if (!meterProvider.TryFindExporter(out PrometheusExporter exporter))
             {
                 throw new ArgumentException("A PrometheusExporter could not be found configured on the provided MeterProvider.");
             }
 
             this.exporter = exporter;
-            PrometheusExporterOptions exporterOptions = this.exporter.Options;
-            string path = exporterOptions.ScrapeEndpointPath ?? PrometheusExporterOptions.DefaultScrapeEndpointPath;
 
+            var prometheusHttpListenerOptions = new PrometheusHttpListenerOptions();
+            configure?.Invoke(prometheusHttpListenerOptions);
+
+            if ((prometheusHttpListenerOptions.HttpListenerPrefixes?.Count ?? 0) <= 0)
+            {
+                throw new ArgumentException("No HttpListenerPrefixes were specified on PrometheusHttpListenerOptions.");
+            }
+
+            string path = exporter.Options.ScrapeEndpointPath ?? PrometheusExporterOptions.DefaultScrapeEndpointPath;
+            if (!path.StartsWith("/"))
+            {
+                path = $"/{path}";
+            }
+
+            if (!path.EndsWith("/"))
+            {
+                path = $"{path}/";
+            }
+
+            foreach (string prefix in prometheusHttpListenerOptions.HttpListenerPrefixes)
+            {
+                this.httpListener.Prefixes.Add($"{prefix.TrimEnd('/')}{path}");
+            }
         }
 
         /// <summary>
