@@ -24,4 +24,6 @@ using System.Runtime.CompilerServices;
 #else
 [assembly: InternalsVisibleTo("Benchmarks")]
 [assembly: InternalsVisibleTo("OpenTelemetry.Exporter.Prometheus.Tests")]
+[assembly: InternalsVisibleTo("OpenTelemetry.Exporter.Prometheus.AspNetCore")]
+[assembly: InternalsVisibleTo("OpenTelemetry.Exporter.Prometheus.HttpListener")]
 #endif
