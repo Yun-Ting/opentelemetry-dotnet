@@ -7,7 +7,7 @@ using OpenTelemetry.Metrics;
 
 namespace OpenTelemetry.Exporter.Prometheus.HttpListener
 {
-    internal sealed class PrometheusHttpListener : IDisposable
+    public sealed class PrometheusHttpListener : IDisposable
     {
         private readonly PrometheusExporter exporter;
         private readonly System.Net.HttpListener httpListener = new();
@@ -25,6 +25,7 @@ namespace OpenTelemetry.Exporter.Prometheus.HttpListener
         public PrometheusHttpListener(MeterProvider meterProvider, Action<PrometheusHttpListenerOptions> configure = null)
         {
             Guard.ThrowIfNull(meterProvider);
+
             if (!meterProvider.TryFindExporter(out PrometheusExporter exporter))
             {
                 throw new ArgumentException("A PrometheusExporter could not be found configured on the provided MeterProvider.");

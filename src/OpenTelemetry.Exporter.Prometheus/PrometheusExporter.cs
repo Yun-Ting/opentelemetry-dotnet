@@ -28,7 +28,6 @@ namespace OpenTelemetry.Exporter
     {
         internal const string HttpListenerStartFailureExceptionMessage = "PrometheusExporter http listener could not be started.";
         internal readonly PrometheusExporterOptions Options;
-        private readonly PrometheusExporterHttpServer metricsHttpServer;
         private Func<int, bool> funcCollect;
         private Func<Batch<Metric>, ExportResult> funcExport;
         private bool disposed;
@@ -40,20 +39,6 @@ namespace OpenTelemetry.Exporter
         public PrometheusExporter(PrometheusExporterOptions options)
         {
             this.Options = options;
-
-            if (options.StartHttpListener)
-            {
-                try
-                {
-                    this.metricsHttpServer = new PrometheusExporterHttpServer(this);
-                    this.metricsHttpServer.Start();
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidOperationException(HttpListenerStartFailureExceptionMessage, ex);
-                }
-            }
-
             this.CollectionManager = new PrometheusCollectionManager(this);
         }
 
@@ -74,21 +59,6 @@ namespace OpenTelemetry.Exporter
         public override ExportResult Export(in Batch<Metric> metrics)
         {
             return this.OnExport(metrics);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (!this.disposed)
-            {
-                if (disposing)
-                {
-                    this.metricsHttpServer?.Dispose();
-                }
-
-                this.disposed = true;
-            }
-
-            base.Dispose(disposing);
         }
     }
 }
