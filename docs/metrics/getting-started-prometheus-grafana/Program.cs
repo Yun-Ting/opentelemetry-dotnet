@@ -15,35 +15,39 @@
 // </copyright>
 
 using System;
-using System.Diagnostics.Metrics;
-using System.Threading;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 
-namespace GettingStartedPrometheusGrafana;
-
 public class Program
 {
-    private static readonly Meter MyMeter = new("MyCompany.MyProduct.MyLibrary", "1.0");
-    private static readonly Counter<long> MyFruitCounter = MyMeter.CreateCounter<long>("MyFruitCounter");
-
     public static void Main()
     {
         using var meterProvider = Sdk.CreateMeterProviderBuilder()
-            .AddMeter("MyCompany.MyProduct.MyLibrary")
-            .AddPrometheusHttpListener()
+            .AddProcessInstrumentation()
+            .AddConsoleExporter()
+            //.AddConsoleExporter()
             .Build();
 
-        Console.WriteLine("Press any key to exit");
-        while (!Console.KeyAvailable)
+        using var meterProvider2 = Sdk.CreateMeterProviderBuilder()
+            .AddProcessInstrumentation()
+            .AddConsoleExporter()
+            //.AddConsoleExporter()
+            .Build();
+
+        // Most of the process.runtime.dotnet.gc.* metrics are only available after the GC finished at least one collection.
+        GC.Collect(1);
+
+        // The process.runtime.dotnet.exception.count metrics are only available after an exception has been thrown post OpenTelemetry.Instrumentation.Runtime initialization.
+        try
         {
-            Thread.Sleep(1000);
-            MyFruitCounter.Add(1, new("name", "apple"), new("color", "red"));
-            MyFruitCounter.Add(2, new("name", "lemon"), new("color", "yellow"));
-            MyFruitCounter.Add(1, new("name", "lemon"), new("color", "yellow"));
-            MyFruitCounter.Add(2, new("name", "apple"), new("color", "green"));
-            MyFruitCounter.Add(5, new("name", "apple"), new("color", "red"));
-            MyFruitCounter.Add(4, new("name", "lemon"), new("color", "yellow"));
+            throw new Exception("Oops!");
         }
+        catch (Exception)
+        {
+            // swallow the exception
+        }
+
+        Console.WriteLine(".NET Runtime metrics are available at http://localhost:9464/metrics, press any key to exit...");
+        Console.ReadKey(false);
     }
 }

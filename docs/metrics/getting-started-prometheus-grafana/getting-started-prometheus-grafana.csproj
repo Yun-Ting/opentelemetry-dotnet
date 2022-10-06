@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="$(RepoRoot)\src\OpenTelemetry.Exporter.Prometheus.HttpListener\OpenTelemetry.Exporter.Prometheus.HttpListener.csproj" />
+    <ProjectReference Include="..\..\..\src\OpenTelemetry.Exporter.Console\OpenTelemetry.Exporter.Console.csproj" />
+    <ProjectReference Include="..\..\..\src\OpenTelemetry.Instrumentation.Process\OpenTelemetry.Instrumentation.Process.csproj" />
   </ItemGroup>
 </Project>
