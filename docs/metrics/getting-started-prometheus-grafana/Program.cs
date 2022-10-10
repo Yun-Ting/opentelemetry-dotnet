@@ -15,6 +15,9 @@
 // </copyright>
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.Metrics;
+using System.Linq;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 
@@ -22,32 +25,42 @@ public class Program
 {
     public static void Main()
     {
-        using var meterProvider = Sdk.CreateMeterProviderBuilder()
-            .AddProcessInstrumentation()
-            .AddConsoleExporter()
-            //.AddConsoleExporter()
+
+        var exportedItemsA = new List<Metric>();
+        var exportedItemsB = new List<Metric>();
+
+        Meter m1 = new("myMeter");
+        Meter m2 = new("myMeter");
+
+        m1.CreateObservableCounter(
+            "myCounterName",
+            () => { return 1D; },
+            unit: "1",
+            description: "test");
+
+        m2.CreateObservableCounter(
+            "myCounterName",
+            () => { return 2D; },
+            unit: "1",
+            description: "test");
+
+        using var meterProviderA = Sdk.CreateMeterProviderBuilder()
+            .AddMeter("myMeter")
+            .AddInMemoryExporter(exportedItemsA)
             .Build();
 
-        using var meterProvider2 = Sdk.CreateMeterProviderBuilder()
-            .AddProcessInstrumentation()
-            .AddConsoleExporter()
-            //.AddConsoleExporter()
+        using var meterProviderB = Sdk.CreateMeterProviderBuilder()
+            .AddMeter("myMeter")
+            .AddInMemoryExporter(exportedItemsB)
             .Build();
 
-        // Most of the process.runtime.dotnet.gc.* metrics are only available after the GC finished at least one collection.
-        GC.Collect(1);
+        meterProviderA.ForceFlush();
+        meterProviderB.ForceFlush();
 
-        // The process.runtime.dotnet.exception.count metrics are only available after an exception has been thrown post OpenTelemetry.Instrumentation.Runtime initialization.
-        try
-        {
-            throw new Exception("Oops!");
-        }
-        catch (Exception)
-        {
-            // swallow the exception
-        }
+        var metricA = exportedItemsA.FirstOrDefault(i => i.Name == "myCounterName");
+        var metricB = exportedItemsB.FirstOrDefault(i => i.Name == "myCounterName");
 
-        Console.WriteLine(".NET Runtime metrics are available at http://localhost:9464/metrics, press any key to exit...");
+        Console.WriteLine("press any key to exit...");
         Console.ReadKey(false);
     }
 }
