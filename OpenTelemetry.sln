@@ -27,8 +27,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{7CB2F02E
 		build\Common.props = build\Common.props
 		build\debug.snk = build\debug.snk
 		build\docfx.cmd = build\docfx.cmd
-		build\docker-compose.net6.0.yml = build\docker-compose.net6.0.yml
 		build\docker-compose.net7.0.yml = build\docker-compose.net7.0.yml
+		build\docker-compose.netcoreapp3.1.yml = build\docker-compose.netcoreapp3.1.yml
 		build\finalize-publicapi.ps1 = build\finalize-publicapi.ps1
 		build\GlobalAttrExclusions.txt = build\GlobalAttrExclusions.txt
 		build\opentelemetry-icon-color.png = build\opentelemetry-icon-color.png
@@ -104,7 +104,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\markdownlint.yml = .github\workflows\markdownlint.yml
 		.github\workflows\publish-packages-1.0.yml = .github\workflows\publish-packages-1.0.yml
 		.github\workflows\sanitycheck.yml = .github\workflows\sanitycheck.yml
-		.github\workflows\stale.yml = .github\workflows\stale.yml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C1542297-8763-4DF4-957C-489ED771C21D}"
@@ -248,6 +247,10 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "getting-started-console", "docs\trace\getting-started-console\getting-started-console.csproj", "{EF4F6280-14D1-49D4-8095-1AC36E169AA8}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "getting-started-jaeger", "docs\trace\getting-started-jaeger\getting-started-jaeger.csproj", "{A0C0B77C-6C7B-4EC2-AC61-EA1F489811B9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenTelemetry.Instrumentation.Process", "src\OpenTelemetry.Instrumentation.Process\OpenTelemetry.Instrumentation.Process.csproj", "{B28E5C3D-5A4E-4344-9BA9-24CC41BE7C1A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "process-instrumentation", "src\process-instrumentation\process-instrumentation.csproj", "{2D1D3C64-A25B-4D32-B243-B2E383429E33}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -523,6 +526,14 @@ Global
 		{A0C0B77C-6C7B-4EC2-AC61-EA1F489811B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0C0B77C-6C7B-4EC2-AC61-EA1F489811B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0C0B77C-6C7B-4EC2-AC61-EA1F489811B9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B28E5C3D-5A4E-4344-9BA9-24CC41BE7C1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B28E5C3D-5A4E-4344-9BA9-24CC41BE7C1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B28E5C3D-5A4E-4344-9BA9-24CC41BE7C1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B28E5C3D-5A4E-4344-9BA9-24CC41BE7C1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D1D3C64-A25B-4D32-B243-B2E383429E33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D1D3C64-A25B-4D32-B243-B2E383429E33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D1D3C64-A25B-4D32-B243-B2E383429E33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D1D3C64-A25B-4D32-B243-B2E383429E33}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
