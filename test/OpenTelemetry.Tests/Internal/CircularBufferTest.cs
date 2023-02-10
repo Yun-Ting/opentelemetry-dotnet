@@ -14,12 +14,44 @@
 // limitations under the License.
 // </copyright>
 
+using Microsoft.Coyote;
+using Microsoft.Coyote.SystematicTesting;
 using Xunit;
 
 namespace OpenTelemetry.Internal.Tests
 {
     public class CircularBufferTest
     {
+        [Fact(Timeout = 50000)]
+        public async Task CoyoteTestTask()
+        {
+            var configuration = Configuration.Create().WithTestingIterations(10);
+            var engine = TestingEngine.Create(configuration, TestDeadLock);
+            engine.Run();
+
+            var report = engine.TestReport;
+            Console.WriteLine(report);
+
+            Assert.True(report.NumOfFoundBugs == 0, $"Coyote found {report.NumOfFoundBugs} bug(s).");
+        }
+
+        [Fact]
+        public void TestDeadLock()
+        {
+            var circularBuffer = new CircularBuffer<string>(1);
+
+            var tasks = new List<Task>()
+            {
+                Task.Run(() => circularBuffer.Read()),
+                Task.Run(() => circularBuffer.Read()),
+                Task.Run(() => circularBuffer.Add("a")),
+                Task.Run(() => circularBuffer.Read()),
+                Task.Run(() => circularBuffer.Add("b")),
+            };
+
+            Task.WaitAll(tasks.ToArray());
+        }
+
         [Fact]
         public void CheckInvalidArgument()
         {
