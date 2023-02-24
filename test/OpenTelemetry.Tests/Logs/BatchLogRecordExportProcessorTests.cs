@@ -17,7 +17,10 @@
 #if !NETFRAMEWORK
 using System;
 using System.Collections.Generic;
+using Microsoft.Coyote.SystematicTesting;
+using Microsoft.Coyote;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
 using OpenTelemetry.Exporter;
 using Xunit;
 
@@ -75,6 +78,82 @@ namespace OpenTelemetry.Logs.Tests
             processor.Shutdown();
 
             Assert.Single(exportedItems);
+        }
+
+        [Fact(Timeout = 5000)]
+        public void RunCoyoteTest()
+        {
+            //var config = Configuration.Create();
+            //TestingEngine engine = TestingEngine.Create(config, this.ShutdownDrainTargetTest);
+            //engine.Run();
+            //var report = engine.TestReport;
+            ////Output.WriteLine("Coyote found {0} bug.", report.NumOfFoundBugs);
+
+            //var list = new List<string>();
+            //IEnumerable<string> en = list;
+            //engine.TryEmitReports("c:\\temp", "coyoteReport", out en);
+
+            //Assert.True(report.NumOfFoundBugs == 0, $"Coyote found {report.NumOfFoundBugs} bug(s).");
+
+            string trace = string.Empty;
+            var config = Configuration.Create().WithReproducibleTrace(trace);
+            TestingEngine engine = TestingEngine.Create(config, ShutdownDrainTargetTest);
+            engine.Run();
+        }
+
+        [Fact]
+        public void ShutdownDrainTargetTest()
+        {
+            List<LogRecord> exportedItems1 = new();
+            List<LogRecord> exportedItems2 = new();
+
+            List<LogRecord> dogfood = new();
+            for (int i = 0; i < 100000000; ++i)
+            {
+                var testLog = new LogRecord();
+                dogfood.Add(testLog);
+            }
+
+            var tasks = new List<Task>()
+            {
+                Task.Run(() =>
+                {
+                    using var processor1 = new BatchLogRecordExportProcessor(
+                        new InMemoryExporter<LogRecord>(exportedItems1),
+                        scheduledDelayMilliseconds: int.MaxValue);
+
+                    int counter = 0;
+                    while (dogfood.Count != 0)
+                    {
+                        processor1.OnEnd(dogfood[counter]);
+                        counter++;
+                    }
+
+                    //Thread.Sleep(3000); // increase the odds of 2 tasks overlaps
+
+                    processor1.Shutdown();
+                }),
+
+                Task.Run(() =>
+                {
+                    using var processor2 = new BatchLogRecordExportProcessor(
+                        new InMemoryExporter<LogRecord>(exportedItems2),
+                        scheduledDelayMilliseconds: int.MaxValue);
+
+                    int counter = 0;
+                    while (dogfood.Count != 0)
+                    {
+                        processor2.OnEnd(dogfood[counter]);
+                        counter++;
+                    }
+
+                    //Thread.Sleep(3000); // increase the odds of 2 tasks overlaps
+                    processor2.Shutdown();
+                }),
+            };
+
+            Assert.Equal(100000000, exportedItems1.Count);
+            Assert.Equal(100000000, exportedItems2.Count);
         }
 
         [Fact]
