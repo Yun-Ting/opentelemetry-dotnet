@@ -15,7 +15,11 @@
 // </copyright>
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading;
+using Microsoft.Coyote;
+using Microsoft.Coyote.SystematicTesting;
 using Xunit;
 
 namespace OpenTelemetry.Metrics.Tests
@@ -136,6 +140,41 @@ namespace OpenTelemetry.Metrics.Tests
         }
 
         [Fact]
+        public void MultiThreadedHistogramUpdateAndSnapShotTest_Coyote()
+        {
+            var config = Configuration.Create()
+                            .WithLockAccessRaceCheckingEnabled()
+                            .WithVerbosityEnabled()
+                            .WithTestingIterations(1000);
+
+            var test = TestingEngine.Create(config, this.MultiThreadedHistogramUpdateAndSnapShotTest);
+
+            test.Run();
+            Console.WriteLine(test.GetReport());
+            Console.WriteLine($"Bugs, if any: {string.Join("\n", test.TestReport.BugReports)}");
+
+            var dir = Directory.GetCurrentDirectory();
+
+            if (test.TryEmitReports(dir, "MultithreadedLongHistogramTest_Coyote", out IEnumerable<string> reportPaths))
+            {
+                foreach (var reportPath in reportPaths)
+                {
+                    Console.WriteLine($"Execution Report: {reportPath}");
+                }
+            }
+
+            if (test.TryEmitCoverageReports(dir, "MultithreadedLongHistogramTest_Coyote", out reportPaths))
+            {
+                foreach (var reportPath in reportPaths)
+                {
+                    Console.WriteLine($"Coverage report: {reportPath}");
+                }
+            }
+
+            Assert.Equal(0, test.TestReport.NumOfFoundBugs);
+        }
+
+        [Fact]
         public void MultiThreadedHistogramUpdateAndSnapShotTest()
         {
             var boundaries = Array.Empty<double>();
@@ -144,7 +183,7 @@ namespace OpenTelemetry.Metrics.Tests
             {
                 MreToBlockUpdateThread = new ManualResetEvent(false),
                 MreToEnsureAllThreadsStart = new ManualResetEvent(false),
-                HistogramPoint = new MetricPoint(this.aggregatorStore, AggregationType.Histogram, null, boundaries, Metric.DefaultExponentialHistogramMaxBuckets),
+                HistogramPoint = new MetricPoint(this.aggregatorStore, AggregationType.Histogram, null, null, Metric.DefaultHistogramBounds),
             };
 
             var numberOfThreads = 10;
