@@ -194,7 +194,6 @@ namespace OpenTelemetry.Metrics.Tests
         {
             var boundaries = Array.Empty<double>();
             var histogramPoint = new MetricPoint(this.aggregatorStore, AggregationType.Histogram, null, boundaries, Metric.DefaultExponentialHistogramMaxBuckets);
-            var mreToTakeLastSnapShot = new ManualResetEvent(false);
             var argsToThread = new ThreadArguments
             {
                 HistogramPoint = histogramPoint,
@@ -215,6 +214,8 @@ namespace OpenTelemetry.Metrics.Tests
             {
                 updateThreads[i].Join();
             }
+
+            snapshotThread.Join();
 
             var sum = histogramPoint.GetHistogramSum();
             Assert.Equal(200, sum);
@@ -371,9 +372,9 @@ namespace OpenTelemetry.Metrics.Tests
                 throw new Exception("invalid args");
             }
 
-            while (Interlocked.Read(ref args.NumberOfUpdates) != 30)
+            while (Interlocked.Read(ref args.NumberOfUpdates) != 10)
             {
-                args.HistogramPoint.TakeSnapshot(true);
+                args.HistogramPoint.TakeSnapshot(outputDelta: false);
             }
         }
 
@@ -384,7 +385,7 @@ namespace OpenTelemetry.Metrics.Tests
                 throw new Exception("invalid args");
             }
 
-            if (Interlocked.Increment(ref args.NumberOfUpdates) != 30)
+            if (Interlocked.Increment(ref args.NumberOfUpdates) != 10)
             {
                 args.HistogramPoint.Update(9);
                 args.HistogramPoint.Update(22);
