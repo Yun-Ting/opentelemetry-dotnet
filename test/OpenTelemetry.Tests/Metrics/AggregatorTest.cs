@@ -416,7 +416,6 @@ namespace OpenTelemetry.Metrics.Tests
             public MetricPoint HistogramPoint;
             public long NumberOfUpdates;
             public ManualResetEvent MreToEnsureAllThreadsStart;
-            public ManualResetEvent MreToStopTakingSnapshot;
             public int ThreadStartedCount;
             public long ThreadsFinishedAllUpdatesCount;
         }
