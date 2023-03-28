@@ -197,6 +197,7 @@ namespace OpenTelemetry.Metrics.Tests
             var argsToThread = new ThreadArguments
             {
                 HistogramPoint = histogramPoint,
+                MreToEnsureAllThreadsStart = new ManualResetEvent(false),
             };
 
             var numberOfThreads = 10;
@@ -208,6 +209,7 @@ namespace OpenTelemetry.Metrics.Tests
                 updateThreads[i].Start(argsToThread);
             }
 
+            argsToThread.MreToEnsureAllThreadsStart.WaitOne();
             snapshotThread.Start(argsToThread);
 
             for (int i = 0; i < numberOfThreads; ++i)
@@ -218,7 +220,7 @@ namespace OpenTelemetry.Metrics.Tests
             snapshotThread.Join();
 
             var sum = histogramPoint.GetHistogramSum();
-            Assert.Equal(200, sum);
+            Assert.Equal(400, sum);
         }
 
         internal static void AssertExponentialBucketsAreCorrect(Base2ExponentialBucketHistogram expectedHistogram, ExponentialHistogramData data)
@@ -372,7 +374,10 @@ namespace OpenTelemetry.Metrics.Tests
                 throw new Exception("invalid args");
             }
 
-            while (Interlocked.Read(ref args.NumberOfUpdates) != 10)
+            var mreToEnsureAllThreadsStart = args.MreToEnsureAllThreadsStart;
+            mreToEnsureAllThreadsStart.WaitOne();
+
+            while (Interlocked.Read(ref args.ThreadsFinishedAllUpdatesCount) != 10)
             {
                 args.HistogramPoint.TakeSnapshot(outputDelta: false);
             }
@@ -385,18 +390,35 @@ namespace OpenTelemetry.Metrics.Tests
                 throw new Exception("invalid args");
             }
 
-            if (Interlocked.Increment(ref args.NumberOfUpdates) != 10)
+            var mreToEnsureAllThreadsStart = args.MreToEnsureAllThreadsStart;
+
+            if (Interlocked.Increment(ref args.ThreadStartedCount) == 10)
             {
-                args.HistogramPoint.Update(9);
-                args.HistogramPoint.Update(22);
-                args.HistogramPoint.Update(-1);
+                mreToEnsureAllThreadsStart.Set();
             }
+
+            args.HistogramPoint.Update(-10);
+            args.HistogramPoint.Update(0);
+            args.HistogramPoint.Update(1);
+            args.HistogramPoint.Update(9);
+
+            Thread.Sleep(1000);
+
+            args.HistogramPoint.Update(10);
+            args.HistogramPoint.Update(11);
+            args.HistogramPoint.Update(19);
+
+            Interlocked.Increment(ref args.ThreadsFinishedAllUpdatesCount);
         }
 
         private class ThreadArguments
         {
             public MetricPoint HistogramPoint;
             public long NumberOfUpdates;
+            public ManualResetEvent MreToEnsureAllThreadsStart;
+            public ManualResetEvent MreToStopTakingSnapshot;
+            public int ThreadStartedCount;
+            public long ThreadsFinishedAllUpdatesCount;
         }
     }
 }
