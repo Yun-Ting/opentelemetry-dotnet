@@ -17,8 +17,10 @@
 #nullable enable
 
 using System.Diagnostics;
+#if !NET5_0_OR_GREATER
 using System.Linq.Expressions;
 using System.Reflection;
+#endif
 using System.Runtime.InteropServices;
 
 namespace OpenTelemetry.Trace
@@ -33,11 +35,11 @@ namespace OpenTelemetry.Trace
         {
             try
             {
-                var flags = BindingFlags.Static | BindingFlags.Public;
-                var method = typeof(Marshal).GetMethod("GetExceptionPointers", flags, null, Type.EmptyTypes, null)
-                    ?? throw new InvalidOperationException("Marshal.GetExceptionPointers method could not be resolved reflectively.");
-                var lambda = Expression.Lambda<Func<IntPtr>>(Expression.Call(method));
-                this.fnGetExceptionPointers = lambda.Compile();
+#if NET5_0_OR_GREATER
+                this.fnGetExceptionPointers = () => Marshal.GetExceptionPointers();
+#else
+                this.fnGetExceptionPointers = this.GetExceptionPointers().Compile();
+#endif
             }
             catch (Exception ex)
             {
@@ -82,5 +84,16 @@ namespace OpenTelemetry.Trace
                 activity.SetStatus(ActivityStatusCode.Error);
             }
         }
+
+#if !NET5_0_OR_GREATER
+        private Expression<Func<IntPtr>> GetExceptionPointers()
+        {
+            var flags = BindingFlags.Static | BindingFlags.Public;
+            var method = typeof(Marshal).GetMethod("GetExceptionPointers", flags, null, Type.EmptyTypes, null)
+                ?? throw new InvalidOperationException("Marshal.GetExceptionPointers method could not be resolved reflectively.");
+            return Expression.Lambda<Func<IntPtr>>(Expression.Call(method));
+        }
+#endif
+
     }
 }
