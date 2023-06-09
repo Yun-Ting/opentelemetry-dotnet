@@ -17,6 +17,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 #if !NET5_0_OR_GREATER
 using System.Linq.Expressions;
 using System.Reflection;
@@ -38,7 +39,7 @@ namespace OpenTelemetry.Trace
 #if NET5_0_OR_GREATER
                 this.fnGetExceptionPointers = () => Marshal.GetExceptionPointers();
 #else
-                this.fnGetExceptionPointers = this.GetExceptionPointers().Compile();
+                this.fnGetExceptionPointers = GetExceptionPointers().Compile();
 #endif
             }
             catch (Exception ex)
@@ -86,7 +87,8 @@ namespace OpenTelemetry.Trace
         }
 
 #if !NET5_0_OR_GREATER
-        private Expression<Func<IntPtr>> GetExceptionPointers()
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL3050", Justification = "")]
+        private static Expression<Func<IntPtr>> GetExceptionPointers()
         {
             var flags = BindingFlags.Static | BindingFlags.Public;
             var method = typeof(Marshal).GetMethod("GetExceptionPointers", flags, null, Type.EmptyTypes, null)
