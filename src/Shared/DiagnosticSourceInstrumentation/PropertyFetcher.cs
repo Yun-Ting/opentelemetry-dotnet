@@ -94,11 +94,15 @@ internal sealed class PropertyFetcher<T>
                     return null;
                 }
 
-                if (
-#if NET6_0_OR_GREATER
-                RuntimeFeature.IsDynamicCodeSupported &&
-#endif
-!propertyInfo.DeclaringType!.IsValueType && !propertyInfo.PropertyType.IsValueType && !typeof(T).IsValueType)
+                var declaringType = propertyInfo.DeclaringType;
+
+                if (declaringType.IsValueType)
+                {
+                    throw new NotSupportedException(
+                        $"Type: {declaringType.FullName} is a value type. PropertyFetcher can only operate on reference payload type.");
+                }
+
+                if (!propertyInfo.DeclaringType!.IsValueType && !propertyInfo.PropertyType.IsValueType && !typeof(T).IsValueType)
                 {
                     return CreateReferencedTypePropertyFetch(propertyInfo);
                 }
