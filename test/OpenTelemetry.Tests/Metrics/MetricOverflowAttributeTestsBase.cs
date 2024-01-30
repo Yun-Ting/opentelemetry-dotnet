@@ -148,6 +148,137 @@ public abstract class MetricOverflowAttributeTestsBase
         Assert.Equal(isEmitOverflowAttributeKeySet, emitOverflowAttribute);
     }
 
+    [Fact]
+    public void RealUnitTest()
+    {
+        var exportedItems = new List<Metric>();
+
+        var meter = new Meter(Utils.GetCurrentMethodName());
+        var counter = meter.CreateCounter<long>("TestCounter");
+
+        using var meterProvider = Sdk.CreateMeterProviderBuilder()
+            .ConfigureServices(services =>
+            {
+                services.AddSingleton(this.configuration);
+            })
+            .AddMeter(meter.Name)
+            .AddInMemoryExporter(
+                exportedItems,
+                metricReaderOptions =>
+                {
+                    metricReaderOptions.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
+                    metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = Timeout.Infinite;
+                })
+            .Build();
+
+        // There are two reserved MetricPoints
+        // 1. For zero tags
+        // 2. For metric overflow attribute when user opts-in for this feature
+
+        counter.Add(10); // Record measurement for zero tags
+
+        // Max number for MetricPoints available for use when emitted with tags
+        int maxMetricPointsForUse = MeterProviderBuilderSdk.MaxMetricPointsPerMetricDefault - 2;
+
+        for (int i = 0; i < maxMetricPointsForUse; i++)
+        {
+            // Emit unique key-value pairs to use up the available MetricPoints
+            // Once this loop is run, we have used up all available MetricPoints for metrics emitted with tags
+            counter.Add(10, new KeyValuePair<string, object>("Key", i));
+        }
+
+        meterProvider.ForceFlush();
+
+        Assert.Single(exportedItems);
+        var metric = exportedItems[0];
+
+        var metricPoints = new List<MetricPoint>();
+        foreach (ref readonly var mp in metric.GetMetricPoints())
+        {
+            metricPoints.Add(mp);
+        }
+
+        MetricPoint overflowMetricPoint;
+
+        // We still have not exceeded the max MetricPoint limit
+        Assert.DoesNotContain(metricPoints, mp => mp.Tags.Count != 0 && mp.Tags.KeyAndValues[0].Key == "otel.metric.overflow");
+
+        exportedItems.Clear();
+        metricPoints.Clear();
+
+        counter.Add(5, new KeyValuePair<string, object>("Key", 1998)); // Emit a metric to exceed the max MetricPoint limit
+
+        meterProvider.ForceFlush();
+        metric = exportedItems[0];
+        foreach (ref readonly var mp in metric.GetMetricPoints())
+        {
+            metricPoints.Add(mp);
+        }
+
+        MetricPoint zeroTagsMetricPoint;
+
+        // Check metric point for overflow
+        overflowMetricPoint = metricPoints.Single(mp => mp.Tags.Count != 0 && mp.Tags.KeyAndValues[0].Key == "otel.metric.overflow");
+        Assert.Equal(true, overflowMetricPoint.Tags.KeyAndValues[0].Value);
+        Assert.Equal(1, overflowMetricPoint.Tags.Count);
+        Assert.Equal(5, overflowMetricPoint.GetSumLong());
+
+        exportedItems.Clear();
+        metricPoints.Clear();
+
+        counter.Add(15); // Record another measurement for zero tags
+
+        // Emit 2500 more newer MetricPoints with distinct dimension combinations
+        for (int i = 2000; i < 4500; i++)
+        {
+            counter.Add(5, new KeyValuePair<string, object>("Key", i));
+        }
+
+        meterProvider.ForceFlush();
+        metric = exportedItems[0];
+        foreach (ref readonly var mp in metric.GetMetricPoints())
+        {
+            metricPoints.Add(mp);
+        }
+
+        zeroTagsMetricPoint = metricPoints.Single(mp => mp.Tags.Count == 0);
+        overflowMetricPoint = metricPoints.Single(mp => mp.Tags.Count != 0 && mp.Tags.KeyAndValues[0].Key == "otel.metric.overflow");
+
+        Assert.Equal(15, zeroTagsMetricPoint.GetSumLong());
+
+        int expectedSum;
+
+        // Number of metric points that were available before the 2500 measurements were made = 2000 (max MetricPoints) - 2 (reserved for zero tags and overflow) = 1998
+        if (this.shouldReclaimUnusedMetricPoints)
+        {
+            // If unused metric points are reclaimed, then number of metric points dropped = 2500 - 1998 = 502
+            expectedSum = 2510; // 502 * 5
+        }
+        else
+        {
+            expectedSum = 12500; // 2500 * 5
+        }
+
+        Assert.Equal(expectedSum, overflowMetricPoint.GetSumLong());
+
+        exportedItems.Clear();
+        metricPoints.Clear();
+
+        // Test that the SDK continues to correctly aggregate the previously registered measurements even after overflow has occurred
+        counter.Add(25);
+
+        meterProvider.ForceFlush();
+        metric = exportedItems[0];
+        foreach (ref readonly var mp in metric.GetMetricPoints())
+        {
+            metricPoints.Add(mp);
+        }
+
+        zeroTagsMetricPoint = metricPoints.Single(mp => mp.Tags.Count == 0);
+
+        Assert.Equal(25, zeroTagsMetricPoint.GetSumLong());
+    }
+
     [Theory]
     [InlineData(MetricReaderTemporalityPreference.Delta)]
     [InlineData(MetricReaderTemporalityPreference.Cumulative)]

@@ -12,9 +12,17 @@ public class Program
 
     public static void Main()
     {
-        var meterProvider = Sdk.CreateMeterProviderBuilder()
+        Environment.SetEnvironmentVariable("OTEL_DOTNET_EXPERIMENTAL_METRICS_EMIT_OVERFLOW_ATTRIBUTE", "true");
+        Environment.SetEnvironmentVariable("OTEL_DOTNET_EXPERIMENTAL_METRICS_RECLAIM_UNUSED_METRIC_POINTS", "true");
+
+        using var meterProvider = Sdk.CreateMeterProviderBuilder()
             .AddMeter("MyCompany.MyProduct.MyLibrary")
-            .AddConsoleExporter()
+            .SetMaxMetricPointsPerMetricStream(3)
+            .AddConsoleExporter((_, metricReaderOptions) =>
+            {
+                metricReaderOptions.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = Timeout.Infinite;
+                metricReaderOptions.TemporalityPreference = MetricReaderTemporalityPreference.Delta;
+            })
             .Build();
 
         MyFruitCounter.Add(1, new("name", "apple"), new("color", "red"));
@@ -22,10 +30,9 @@ public class Program
         MyFruitCounter.Add(1, new("name", "lemon"), new("color", "yellow"));
         MyFruitCounter.Add(2, new("name", "apple"), new("color", "green"));
         MyFruitCounter.Add(5, new("name", "apple"), new("color", "red"));
-        MyFruitCounter.Add(4, new("name", "lemon"), new("color", "yellow"));
 
-        // Dispose meter provider before the application ends.
-        // This will flush the remaining metrics and shutdown the metrics pipeline.
-        meterProvider.Dispose();
+        meterProvider.ForceFlush();
+
+        MyFruitCounter.Add(4, new("name", "lemon"), new("color", "yellow"));
     }
 }
