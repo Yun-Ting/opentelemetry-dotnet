@@ -16,7 +16,7 @@ namespace OpenTelemetry.Logs.Tests;
 
 public sealed class LogRecordTest
 {
-    private readonly Regex regex = new(@".Log(Critical|Debug|Error|Information|Trace|Warning)\(.*(?:\$|string.Format\()"".+"".*\)");
+    private readonly Regex regex = new(".Log(?:Critical|Debug|Error|Information|Trace|Warning)\\(.*(?:\\$|string.Format\\()\".+\".*\\)");
 
     private enum Field
     {
