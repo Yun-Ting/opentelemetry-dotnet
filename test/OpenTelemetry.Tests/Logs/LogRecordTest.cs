@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
@@ -15,11 +16,39 @@ namespace OpenTelemetry.Logs.Tests;
 
 public sealed class LogRecordTest
 {
+    private readonly Regex regex = new(@".Log(Critical|Debug|Error|Information|Trace|Warning)\(.*(?:\$|string.Format\()"".+"".*\)");
+
     private enum Field
     {
         FormattedMessage,
         State,
         StateValues,
+    }
+
+    [Theory]
+    [InlineData(@"  logger.LogCritical($""false-positive"");")]
+    [InlineData(@"  logger.LogCritical(string.Format(""false-positive""));")]
+    [InlineData(@"  logger.LogCritical($""false-positive {{ok}}"");")]
+    [InlineData(@"  logger.LogCritical($""want-to-flag-this {bad}"");")]
+    [InlineData(@"  logger.LogCritical($""want-to-flag-this {bad} more {bad2}"");")]
+    [InlineData(@"  logger.LogCritical(string.Format(""false-positive {{}}""));")]
+    [InlineData(@"  logger.LogCritical(string.Format(""want-to-flag-this {0}"", bad));")]
+    [InlineData(@"logger.LogInformation(ex, $""false-positive"")")]
+    [InlineData(@"logger.LogInformation(ex, string.Format(""false-positive""))")]
+    [InlineData(@"logger.LogInformation(ex, string.Format(""want-to-flag-this {0}"", thing))")]
+
+    public void StringMatchesRegex_ReturnsTrue(string input)
+    {
+        Assert.Matches(this.regex, input);
+    }
+
+    [Theory]
+    [InlineData(@"logger.LogInformation(""not-flagged"")")]
+    [InlineData(@"logger.LogInformation(""not-flagged {test} {test2}"")")]
+    [InlineData(@"  logger.LogInformation(ex, ""not-flagged {test}"")")]
+    public void StringDoesNotMatchRegex_ReturnsFalse(string input)
+    {
+        Assert.DoesNotMatch(this.regex, input);
     }
 
     [Fact]
