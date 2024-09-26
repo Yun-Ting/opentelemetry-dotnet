@@ -11,6 +11,20 @@ namespace OpenTelemetry.Logs;
 /// </summary>
 public static class OpenTelemetryDependencyInjectionLoggingServiceCollectionExtensions
 {
+    public static IServiceCollection AddOpenTelemetryInternalEventLogging(
+        this IServiceCollection services,
+        Action<OpenTelemetryEventLoggingOptions>? configure = null)
+    {
+        Guard.ThrowIfNull(services);
+
+        if (configure != null)
+        {
+            services.Configure(configure);
+        }
+
+        return services.AddHostedService<OpenTelemetryEventLoggingHostedService>();
+    }
+
     /// <summary>
     /// Registers an action used to configure the OpenTelemetry <see
     /// cref="LoggerProviderBuilder"/>.

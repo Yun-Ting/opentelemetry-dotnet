@@ -6,11 +6,22 @@ using OpenTelemetry.Logs;
 
 var loggerFactory = LoggerFactory.Create(builder =>
 {
-    builder.AddOpenTelemetry(logging =>
-    {
-        logging.AddConsoleExporter();
-    });
+    builder.AddOpenTelemetry();
+
+    builder.Services.AddOpenTelemetryInternalEventLogging();
+
+    builder.Services.ConfigureOpenTelemetryLoggerProvider(logging =>
+        logging.AddConsoleExporter());
 });
+
+//var loggerFactory = LoggerFactory.Create(builder =>
+//{
+//    builder.UseOpenTelemetry(logging =>
+//    {
+//        logging.AddConsoleExporter();
+//        logging.EnableOpenTelemetryInternalDiagnostics();
+//    });
+//});
 
 var logger = loggerFactory.CreateLogger<Program>();
 
