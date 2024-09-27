@@ -13,7 +13,7 @@ public static class OpenTelemetryDependencyInjectionLoggingServiceCollectionExte
 {
     public static IServiceCollection AddOpenTelemetryInternalEventLogging(
         this IServiceCollection services,
-        Action<OpenTelemetryEventLoggingOptions>? configure = null)
+        Action<OpenTelemetryInternalEventLoggingOptions>? configure = null)
     {
         Guard.ThrowIfNull(services);
 
@@ -22,7 +22,7 @@ public static class OpenTelemetryDependencyInjectionLoggingServiceCollectionExte
             services.Configure(configure);
         }
 
-        return services.AddHostedService<OpenTelemetryEventLoggingHostedService>();
+        return services.AddHostedService<OpenTelemetryInternalEventLoggingHostedService>();
     }
 
     /// <summary>

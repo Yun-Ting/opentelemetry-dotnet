@@ -9,6 +9,7 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using OpenTelemetry.Internal;
 using OpenTelemetry.Resources;
+using Microsoft.Extensions.Logging;
 
 namespace OpenTelemetry.Logs;
 
@@ -43,6 +44,9 @@ internal sealed class LoggerProviderSdk : LoggerProvider
         }
 
         OpenTelemetrySdkEventSource.Log.LoggerProviderSdkEvent("Building LoggerProvider.");
+
+        var internalEvents = this.ServiceProvider.GetRequiredService<OpenTelemetryInternalEventLoggingHostedService>();
+        internalEvents.GetOpenTelemetryEventLogger().LogInformation("Building LoggerProvider with ILogger!!!!!!!!!!!!!!!");
 
         var configureProviderBuilders = serviceProvider!.GetServices<IConfigureLoggerProviderBuilder>();
         foreach (var configureProviderBuilder in configureProviderBuilders)
