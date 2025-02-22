@@ -309,7 +309,14 @@ internal sealed class SelfDiagnosticsEventListener : EventListener
         // See: https://github.com/open-telemetry/opentelemetry-dotnet/pull/5046
         if (eventData.EventSource.Name.StartsWith(EventSourceNamePrefix, StringComparison.OrdinalIgnoreCase))
         {
-            this.WriteEvent(eventData.Message, eventData.Payload);
+            if (this.configRefresher.IsSelfDiagnosticsEnVarOn)
+            {
+                Console.WriteLine(eventData.Message!, eventData.Payload);
+            }
+            else
+            {
+                this.WriteEvent(eventData.Message, eventData.Payload);
+            }
         }
     }
 
